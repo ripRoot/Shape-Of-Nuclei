@@ -4,14 +4,37 @@ import colorsys
 import numpy as np
 import pymunk.pygame_util
 
+'''
+1.) Agregate at the edges.
+2.) image generation for input.
+rasterizing
+
+reverse ray tracing.
+
+map the outline
+balls bounce
+onlooker will draw on screen/picture
+image in the middle spinning,
+build shape from that bouncing
+
+
+idea:
+have a button that is clickable after drawing thats (done), another button that says (try again)... and also (restart)
+
+wow i really need to rearrange this code lol
+
+marbles bounce off, track angle (try different angles to find hit point) map point -- biggest problem optimizing..
+
+if marble goes straight, we can get rid of it because it didnt hit on object
+'''
 # Global Variables
 pygame.init()
 width = pygame.display.Info().current_w
 height = pygame.display.Info().current_h
 marbles = []
 frozen_marbles = []
-x=width/2
-y=height/2
+x = width/2
+y = height/2
 
 def main():
     screen=pygame.display.set_mode((width, height))
@@ -19,17 +42,19 @@ def main():
 
     space = pymunk.Space()
     space.gravity = 00,00
-
+    '''
     body = pymunk.Body(body_type=pymunk.Body.STATIC)
     body.position = (x,y)
     middle_shape = pymunk.Circle(body, 100)
     middle_shape.collision_type = 1
     space.add(body, middle_shape)
-    
+    '''
+    curr_points = []
+    drawn_section = []
 
     running = True
     #draw_options = pymunk.pygame_util.DrawOptions(screen)
-    space.on_collision(2, 1, begin=on_hit)
+    #space.on_collision(2, 1, begin=on_hit)
     
 
     ticks_until_next_marble = 0
@@ -39,9 +64,42 @@ def main():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+                '''
+            elif event.type == pygame.MOUSEBUTTONDOWN:
+                if event.button == 1:
+                    drawing = True
+                    curr_points = [event.pos]
+            elif event.type == pygame.MOUSEMOTION:
+                if drawing:
+                    curr_points.append(event.pos)
+            elif event.type == pygame.MOUSEBUTTONUP:
+                if event.type == 1 and drawing:
+                    drawing = False
 
+                    for i in range(len(curr_points -1)):
+                        segment = pymunk.Segment(space.static_body, curr_points[i], curr_points[i+1], 10)
+                        
+                        space.add(segment)
+                        '''
         screen.fill((0, 0, 0))
+
+
+        '''
+            This segment of code is the drawing mechanic.
+        '''
+        if pygame.mouse.get_pressed()[0]:
+            points.append(pygame.mouse.get_pos())
+        else:
+            points.clear()
+        for i in range(len(points) - 1):
+            segment = pymunk.Segment(space.static_body, points[i], points[i+1], 50)
+            space.add(segment)
+            pygame.draw.line(screen, (255, 0, 0, 255), points[i], points[i+1], 50)
         
+
+        '''
+            This segment is the marbles..
+        '''
         if counter <= 10000:
             ticks_until_next_marble -= 1
             if ticks_until_next_marble <= 0:
@@ -54,13 +112,11 @@ def main():
 
         '''
         switch it to pygame draw 
+
+        check if object passes [segment] points/coordinate, then backtrack to have it bounce off..
         '''
 
-        space.step(1 / 60)
-
-        for marble in frozen_marbles:
-            marble.body_type = pymunk.Body.STATIC
-        frozen_marbles.clear()
+        space.step(1/60)
 
         draw_marbles(screen, marbles)
         pygame.display.flip()
@@ -92,18 +148,50 @@ def how_many_marbles(space, counter, ticks):
     #circle.group = 1
     
     # Make each marble go towards the center
-    dx = x - body2.position.x
-    dy = y - body2.position.y
+    
+    '''
     dist = (dx ** 2 + dy ** 2) ** 0.5
     body2.velocity= (dx / dist * 250, dy / dist * 250)
 
+
+
+    if it hits, then 
+    '''
+
+
+    body2.velocity = calculate_velocity(body2.position.x, body2.position.y)
     space.add(body2, circle)
     marbles.append(circle)
-    
+    '''
+def calculate_velocity(self, x, y):
+    if y==0:
+        dist = self.
+   '''
+def calculate_velocity(x, y):
+    '''
+    if marble spawns at (x,0) equals top, then you want velocity to map to (x, height)..
+    if marble spawns at (0, y) equals LHS, then you want to map velocity to (width, y)..
+    '''
+    if y == 0:
+        #if Top
+        dist = height
+        return (x/dist, dist / 2)
+    if x == 0:
+        #if Left
+        dist = width
+        return (dist /2, y/dist)
+    if x == width:
+        #if Right
+        dist = -width
+        return (dist /2, y/dist)
+    if y == height:
+        #if Bottom
+        dist = -height
+        return (x/dist, dist/2)
 
 def draw_marbles(screen, marbles):
     '''
-    Draws marbles...l ol..
+    Draws marbles...
     '''
     for marble in marbles:
         pos = (int(marble.body.position.x), int(marble.body.position.y))
@@ -113,7 +201,6 @@ def on_hit(collision_marbles, space, data):
     collision_marbles.shapes[0].body.velocity = (0, 0)
     collision_marbles.shapes[0].body.angular_velocity = 0
     collision_marbles.shapes[0].collision_type = 1
-    
 
     frozen_marbles.append(collision_marbles.shapes[0].body)
 
@@ -152,6 +239,4 @@ def getrandompoint(width, height):
         return 0, height - (random_dist - (2*width + height))
 
 main()
-
-
 
